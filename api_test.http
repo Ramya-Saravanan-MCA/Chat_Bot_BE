@@ -1,0 +1,52 @@
+### Create a new session
+POST http://127.0.0.1:8000/sessions
+Content-Type: application/json
+
+{
+  "document_name": "all.pdf",
+  "llm_model": "groq",
+  "retrieval_mode": "hybrid",
+  "top_k_dense": 5,
+  "top_k_sparse": 5,
+  "rrf_k": 10,
+  "top_k_final": 5
+}
+
+###
+
+### Update the session 
+PUT http://127.0.0.1:8000/sessions/11644a7c-6a6d-48c4-b765-e29ef3cc217f
+Content-Type: application/json
+
+{
+  "llm_model": "groq",
+  "retrieval_mode": "hybrid",
+  "top_k_dense": 10,
+  "top_k_sparse": 10,
+  "rrf_k": 60,
+  "top_k_final": 14
+}
+
+###
+
+### Delete the session
+DELETE http://127.0.0.1:8000/sessions/<SESSION_ID>
+Content-Type: application/json
+
+###
+
+### to get the current session info
+
+GET http://127.0.0.1:8000/sessions/e7174561-9573-43ed-807e-3597bee7b581
+Content-Type: application/json
+
+###
+POST http://127.0.0.1:8000/chat
+Content-Type: application/json
+
+{
+  "session_id": "11644a7c-6a6d-48c4-b765-e29ef3cc217f",
+  "query": "how can i get student loan"
+}
+
+###

@@ -1,0 +1,6 @@
+$b6ce1857-154a-429f-b5c6-c4b7f639a815²ò,
+session_id ÿÿÿÿÿÿÿÿÿ*string08Zdefault*turn_id ÿÿÿÿÿÿÿÿÿ*int6408Zdefault.
+user_query ÿÿÿÿÿÿÿÿÿ*string08Zdefault0bot_response ÿÿÿÿÿÿÿÿÿ*string08Zdefault1intent_labels ÿÿÿÿÿÿÿÿÿ*string08Zdefault5intent_confidence ÿÿÿÿÿÿÿÿÿ*double08Zdefault)slots ÿÿÿÿÿÿÿÿÿ*string08Zdefault2retrieval_type ÿÿÿÿÿÿÿÿÿ*string08Zdefault6retrieval_strength ÿÿÿÿÿÿÿÿÿ*double08Zdefault7retrieved_chunk_ids	 ÿÿÿÿÿÿÿÿÿ*string08Zdefault*used_rag
+ ÿÿÿÿÿÿÿÿÿ*bool08Zdefault3answer_decision ÿÿÿÿÿÿÿÿÿ*string08Zdefault7embedding_latency_ms ÿÿÿÿÿÿÿÿÿ*int6408Zdefault=dense_retrieval_latency_ms ÿÿÿÿÿÿÿÿÿ*int6408Zdefault>sparse_retrieval_latency_ms ÿÿÿÿÿÿÿÿÿ*int6408Zdefault1llm_latency_ms ÿÿÿÿÿÿÿÿÿ*int6408Zdefault3total_latency_ms ÿÿÿÿÿÿÿÿÿ*int6408Zdefault-	timestamp ÿÿÿÿÿÿÿÿÿ*string08Zdefault"!
+lance.auto_cleanup.interval20"'
+lance.auto_cleanup.older_than14days
