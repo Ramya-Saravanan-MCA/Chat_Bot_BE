@@ -1,0 +1,5 @@
+$e9e9115a-4da6-4121-8b87-2fcb4504030d²ý,
+session_id ÿÿÿÿÿÿÿÿÿ*string08Zdefault.total_turns ÿÿÿÿÿÿÿÿÿ*int6408Zdefault8total_session_time_ms ÿÿÿÿÿÿÿÿÿ*int6408Zdefault<avg_embedding_latency_ms ÿÿÿÿÿÿÿÿÿ*double08ZdefaultBavg_dense_retrieval_latency_ms ÿÿÿÿÿÿÿÿÿ*double08ZdefaultCavg_sparse_retrieval_latency_ms ÿÿÿÿÿÿÿÿÿ*double08Zdefault6avg_llm_latency_ms ÿÿÿÿÿÿÿÿÿ*double08Zdefault:avg_retrieval_strength ÿÿÿÿÿÿÿÿÿ*double08Zdefault.
+created_at ÿÿÿÿÿÿÿÿÿ*string08Zdefault,ended_at	 ÿÿÿÿÿÿÿÿÿ*string08Zdefault"!
+lance.auto_cleanup.interval20"'
+lance.auto_cleanup.older_than14days

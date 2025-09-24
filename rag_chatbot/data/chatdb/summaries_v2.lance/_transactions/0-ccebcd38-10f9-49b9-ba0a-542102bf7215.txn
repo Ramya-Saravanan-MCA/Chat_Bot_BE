@@ -1,0 +1,5 @@
+$ccebcd38-10f9-49b9-ba0a-542102bf7215²ä,
+session_id ÿÿÿÿÿÿÿÿÿ*string08Zdefault*turn_id ÿÿÿÿÿÿÿÿÿ*int6408Zdefault.
+user_query ÿÿÿÿÿÿÿÿÿ*string08Zdefault0bot_response ÿÿÿÿÿÿÿÿÿ*string08Zdefault+summary ÿÿÿÿÿÿÿÿÿ*string08Zdefault-	timestamp ÿÿÿÿÿÿÿÿÿ*string08Zdefault"!
+lance.auto_cleanup.interval20"'
+lance.auto_cleanup.older_than14days

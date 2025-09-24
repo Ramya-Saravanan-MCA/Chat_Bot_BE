@@ -1,0 +1,62 @@
+[
+    {
+      "query_id": "Q1",
+      "query": "What are the different types of loan products available?",
+      "paraphrased_queries": [
+        "Which kinds of loans does ICICI Bank offer?",
+        "Can you list all the loan products I can apply for?",
+        "What variety of loans are provided by the bank?"
+      ],
+      "mapped_chunk_ids": [0,1],
+      "goal_answer": "ICICI Bank offers a wide range of loan products including Home Loans, Personal Loans, Car and Two-Wheeler Loans, Business Loans, Education Loans, Gold Loans, Consumer Finance, and Cardless EMI options.",
+      "intents": ["in_scope"]
+    },
+    {
+      "query_id": "Q2",
+      "query": "How can I apply for a loan with your bank?",
+      "paraphrased_queries": [
+        "What are the ways to apply for a loan at ICICI?",
+        "Can I apply for a loan online or do I need to visit a branch?",
+        "How do I start the loan application process?"
+      ],
+      "mapped_chunk_ids": [1,2],
+      "goal_answer": "You can apply for a loan through the ICICI Bank website, mobile app, Net Banking, WhatsApp Banking, or by visiting a branch. Some loans also offer instant online approval.",
+      "intents": ["in_scope"]
+    },
+    {
+      "query_id": "Q3",
+      "query": "What is the maximum loan amount I can apply for?",
+      "paraphrased_queries": [
+        "How much is the highest loan amount available?",
+        "What’s the loan limit for home, personal, and business loans?",
+        "What’s the maximum borrowing capacity I can get?"
+      ],
+      "mapped_chunk_ids": [2,3],
+      "goal_answer": "Maximum loan amounts vary: Home Loans up to ₹5 crore, Personal Loans up to ₹50 lakh, Business Loans up to ₹75 lakh, while Education Loans depend on the course and institution. Actual eligibility depends on income, credit score, and other factors.",
+      "intents": ["in_scope"]
+    },
+    {
+      "query_id": "Q4",
+      "query": "What are the documentation requirements for applying for a loan?",
+      "paraphrased_queries": [
+        "Which documents are needed for loan approval?",
+        "Do I need ID and income proof to apply for a loan?",
+        "What paperwork is required for different loans?"
+      ],
+      "mapped_chunk_ids": [4,5,6],
+      "goal_answer": "Commonly required documents include proof of identity (Aadhaar, PAN, Passport), proof of address, proof of income (salary slips, bank statements, IT returns), employment/business proof, and property documents for home loans. Additional documents may vary by loan type.",
+      "intents": ["in_scope"]
+    },
+    {
+      "query_id": "Q5",
+      "query": "What is the processing time for loan approval?",
+      "paraphrased_queries": [
+        "How long does it take to get a loan approved?",
+        "What’s the usual time for loan processing?",
+        "Is loan approval instant or does it take days?"
+      ],
+      "mapped_chunk_ids": [5,7],
+      "goal_answer": "Processing time depends on the loan type. Personal and some home loans may offer instant or same-day provisional approval, while business and education loans may take a few working days based on complexity and documentation.",
+      "intents": ["in_scope"]
+    }
+  ]
