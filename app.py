@@ -21,8 +21,9 @@ from router import (
     reply_greeting, reply_handoff, reply_safety, reply_oos, reply_not_found, reply_chitchat
 )
 
-DATA_DIR = "rag_chatbot/data"
-CHATDB_PATH = "rag_chatbot/data/chatdb"
+DATA_DIR = os.getenv("DATA_DIR")
+CHATDB_PATH = os.getenv("CHATDB_PATH")
+LANCEDB_PATH= os.getenv("LANCEDB_PATH")
 
 def get_unified_knowledge_base_docs(db_path):
     """Get all documents in the unified knowledge base"""
