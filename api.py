@@ -73,13 +73,22 @@ def get_existing_tables(db_path):
 app = FastAPI(
     title="Hybrid RAG Chatbot API",
     description="API endpoints for document ingestion, session management, chat, and comprehensive analytics.",
-    version="1.0.0"
+    version="1.0.0",
+    openapi_url="/api/openapi.json",
+    redoc_url="/api/redoc",
+    docs_url="/api/documents",
+    default_response_class=JSONResponse,
 )
+
+origins = [
+    "http://localhost:3000",       
+    "http://3.109.54.160"         
+]
 
 # Add CORS middleware for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
