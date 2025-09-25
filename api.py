@@ -11,7 +11,12 @@ import re
 import lancedb
 import psutil
 import json
-from dotenv import load_dotenv
+
+from utils.secrets_manager import load_secrets_into_env
+load_secrets_into_env()
+
+from config import OPENAI_API_KEY, GROQ_API_KEY
+
 import numpy as np
 from db.ingestor import Ingestor
 from retrieval.retriever import Retriever
@@ -20,8 +25,8 @@ from llm.conversational import get_conversational_answer
 from preprocess.document_loader import preprocess_text
 from llm.summarizer import summarizer
 from router import (
-    rule_gate, call_llm_router, retrieval_strength, route_and_answer,
-    TAU_RETRIEVE_STRONG, TAU_RETRIEVE_WEAK, TAU_ROUTER_HIGH,
+    rule_gate, call_llm_router, route_and_answer,
+     TAU_ROUTER_HIGH,
     reply_greeting, reply_handoff, reply_safety, reply_oos, reply_not_found, reply_chitchat
 )
 
@@ -32,8 +37,8 @@ CHATDB_PATH = "rag_chatbot/data/chatdb"
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(CHATDB_PATH, exist_ok=True)
 
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+OPENAI_API_KEY = OPENAI_API_KEY
 
 def get_unified_knowledge_base_docs(db_path):
     """Get all documents in the unified knowledge base"""
