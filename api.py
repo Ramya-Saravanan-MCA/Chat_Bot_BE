@@ -661,12 +661,24 @@ def get_session_info(session_id: str):
 
 @app.get("/sessions/history/{session_id}")
 def get_session_history(session_id: str):
+    # Path to the session file
     file_path = f"rag_chatbot/data/chatdb/items.lance/data/{session_id}.lance"
+    
+    # If file doesn't exist, create empty session
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Session not found")
-
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        # Create empty items and buffer DataFrames (adjust columns as needed)
+        empty_items = pd.DataFrame(columns=["item_id", "content", "timestamp"])
+        empty_buffer = pd.DataFrame(columns=["buffer_id", "content", "timestamp"])
+        
+        # Save empty session using your session logger or directly
+        session_logger.save_items(session_id, empty_items)
+        session_logger.save_buffer(session_id, empty_buffer)
+    
+    # Fetch the session data
     items_df = session_logger.get_items(session_id)
     buffer_df = session_logger.get_buffer(session_id)
+    
     return {
         "session_id": session_id,
         "items": items_df.to_dict("records") if not items_df.empty else [],
