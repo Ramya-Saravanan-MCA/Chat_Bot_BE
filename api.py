@@ -11,12 +11,7 @@ import re
 import lancedb
 import psutil
 import json
-import boto3
-from botocore.exceptions import ClientError
 from dotenv import load_dotenv
-load_dotenv()
-
-
 import numpy as np
 from db.ingestor import Ingestor
 from retrieval.retriever import Retriever
@@ -33,6 +28,12 @@ from router import (
 LANCEDB_PATH = "rag_chatbot/data/lancedb"
 DATA_DIR = "rag_chatbot/data"
 CHATDB_PATH = "rag_chatbot/data/chatdb"
+
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(CHATDB_PATH, exist_ok=True)
+
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 def get_unified_knowledge_base_docs(db_path):
     """Get all documents in the unified knowledge base"""
@@ -72,22 +73,13 @@ def get_existing_tables(db_path):
 app = FastAPI(
     title="Hybrid RAG Chatbot API",
     description="API endpoints for document ingestion, session management, chat, and comprehensive analytics.",
-    version="1.0.0",
-    openapi_url="/api/openapi.json",
-    redoc_url="/api/redoc",
-    docs_url="/api/documents",
-    default_response_class=JSONResponse,
+    version="1.0.0"
 )
-
-origins = [
-    "http://localhost:3000",       
-    "http://65.0.173.114"         
-]
 
 # Add CORS middleware for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
