@@ -659,30 +659,46 @@ def get_session_info(session_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving session info: {str(e)}")
 
-@app.get("/sessions/history/{session_id}")
-def get_session_history(session_id: str):
-    try:
-        # Attempt to fetch items and buffer
-        try:
-            items_df = session_logger.get_items(session_id)
-        except Exception:
-            items_df = pd.DataFrame(columns=["turn_id", "user_query", "bot_response", 
-                                             "summary", "metrics", "retrieval_type", 
-                                             "retrieved_chunk_ids"])
+@app.get("/sessions/metrics/{session_id}")
+def get_session_metrics_combined(session_id: str):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found.")
 
-        try:
-            buffer_df = session_logger.get_buffer(session_id)
-        except Exception:
-            buffer_df = pd.DataFrame(columns=["turn_id", "user_query", "bot_response"])
+    try:
+        # Full items
+        items_df = session_logger.get_items(session_id)
+        items_records = items_df.to_dict("records") if not items_df.empty else []
+
+        # Latest turn (buffer)
+        buffer_df = session_logger.get_buffer(session_id)
+        latest_turn = buffer_df.iloc[-1].to_dict() if not buffer_df.empty else None
+
+        # Compute metrics for items
+        total_items = len(items_df)
+        total_rag_queries = sum(1 for m in items_df["metrics"] if m and m.get("used_rag", False)) if total_items > 0 else 0
+        avg_response_time = np.mean([m.get("total_time", 0) for m in items_df["metrics"] if m]) if total_items > 0 else 0
+
+        # Intent distribution
+        intents = []
+        for m in items_df["metrics"]:
+            if m and "intent_labels" in m:
+                intents.extend(m["intent_labels"])
+        intent_distribution = pd.Series(intents).value_counts().to_dict() if intents else {}
 
         return {
             "session_id": session_id,
-            "items": items_df.to_dict("records"),
-            "buffer": buffer_df.to_dict("records"),
-            "total_items": len(items_df)
+            "buffer": latest_turn,           # latest query/answer
+            "items": items_records,          # all queries/answers
+            "metrics": {
+                "total_items": total_items,
+                "total_rag_queries": total_rag_queries,
+                "avg_response_time_sec": round(avg_response_time, 3),
+                "intent_distribution": intent_distribution
+            }
         }
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving session history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving session metrics: {str(e)}")
 
 @app.get("/sessions/{session_id}/goal-set")
 def export_session_goal_set(session_id: str):
