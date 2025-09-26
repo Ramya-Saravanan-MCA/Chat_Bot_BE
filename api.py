@@ -661,17 +661,18 @@ def get_session_info(session_id: str):
 
 @app.get("/sessions/history/{session_id}")
 def get_session_history(session_id: str):
-    try:
-        items_df = session_logger.get_items(session_id)
-        buffer_df = session_logger.get_buffer(session_id)
-        return {
-            "session_id": session_id,
-            "items": items_df.to_dict("records") if not items_df.empty else [],
-            "buffer": buffer_df.to_dict("records") if not buffer_df.empty else [],
-            "total_items": len(items_df) if not items_df.empty else 0
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving session history: {str(e)}")
+    file_path = f"rag_chatbot/data/chatdb/items.lance/data/{session_id}.lance"
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    items_df = session_logger.get_items(session_id)
+    buffer_df = session_logger.get_buffer(session_id)
+    return {
+        "session_id": session_id,
+        "items": items_df.to_dict("records") if not items_df.empty else [],
+        "buffer": buffer_df.to_dict("records") if not buffer_df.empty else [],
+        "total_items": len(items_df) if not items_df.empty else 0
+    }
 
 @app.get("/sessions/{session_id}/goal-set")
 def export_session_goal_set(session_id: str):
