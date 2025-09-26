@@ -81,7 +81,7 @@ app = FastAPI(
 
 origins = [
     "http://localhost:3000",       
-    "http://65.0.173.114"         
+    "http://3.109.54.160"         
 ]
 
 # Add CORS middleware for frontend integration
