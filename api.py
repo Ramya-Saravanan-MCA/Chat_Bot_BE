@@ -659,7 +659,7 @@ def get_session_info(session_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving session info: {str(e)}")
 
-@app.get("/sessions/metrics/{session_id}")
+@app.get("/sessions/history/{session_id}")
 def get_session_metrics_combined(session_id: str):
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found.")
