@@ -4,26 +4,31 @@ import uuid
 import time
 import pandas as pd
 import re
-from dotenv import load_dotenv
 import lancedb
 import psutil
-from config import GROQ_API_KEY, EMBEDDING_MODEL_NAME, LANCEDB_PATH
+from dotenv import load_dotenv
+load_dotenv()
+
+
+from config import GROQ_API_KEY, OPENAI_API_KEY, EMBEDDING_MODEL_NAME, LANCEDB_PATH
+
+
+
 from db.ingestor import Ingestor
 from retrieval.retriever import Retriever
 from llm.conversational import get_conversational_answer
 from preprocess.document_loader import preprocess_text
-
 from llm.summarizer import summarizer
 from db.session_logger import SessionLogger
 from router import (
-    rule_gate, call_llm_router, retrieval_strength, route_and_answer,
-    TAU_RETRIEVE_STRONG, TAU_RETRIEVE_WEAK, TAU_ROUTER_HIGH,
+    rule_gate, call_llm_router, route_and_answer,
+     TAU_ROUTER_HIGH,
     reply_greeting, reply_handoff, reply_safety, reply_oos, reply_not_found, reply_chitchat
 )
 
-DATA_DIR = os.getenv("DATA_DIR")
-CHATDB_PATH = os.getenv("CHATDB_PATH")
-LANCEDB_PATH= os.getenv("LANCEDB_PATH")
+LANCEDB_PATH = "rag_chatbot/data/lancedb"
+DATA_DIR = "rag_chatbot/data"
+CHATDB_PATH = "rag_chatbot/data/chatdb"
 
 def get_unified_knowledge_base_docs(db_path):
     """Get all documents in the unified knowledge base"""
@@ -52,15 +57,12 @@ def get_unified_knowledge_base_docs(db_path):
         print(f"Error getting KB docs: {e}")
         return []
 
-os.makedirs(DATA_DIR, exist_ok=True)
-os.makedirs(CHATDB_PATH, exist_ok=True)
-
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
+OPENAI_API_KEY = OPENAI_API_KEY
+GROQ_API_KEY =GROQ_API_KEY
 session_logger = SessionLogger(CHATDB_PATH)
 
-# session state initialization
+# session state init
+# Inialization
 if "session_id" not in st.session_state:
     st.session_state["session_id"] = str(uuid.uuid4())
 if "turn_id" not in st.session_state:
@@ -189,7 +191,7 @@ if not st.session_state["proceeded"]:
                 st.session_state["db_initialized"] = False
                 
         elif selected_doc == "Upload new document..." and uploaded_file:
-            ingestor = Ingestor(db_path=LANCEDB_PATH, table_name="unified_knowledge_base")
+            ingestor = Ingestor(LANCEDB_PATH, table_name="unified_knowledge_base")
             with st.spinner(f"🔄 Uploading and indexing {len(uploaded_file)} documents..."):
                 success_count = 0
                 for file in uploaded_file:
@@ -256,16 +258,16 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
 
     st.warning(f":orange[Session ID: {st.session_state['session_id']}]")
     st.error(f":red[Turn ID: {st.session_state['turn_id']}]")
+    st.success(f"LLM model: {llm_model} | Retrieval mode: {retrieval_mode} | Top-K Dense: {top_k_dense} | Top-K Sparse: {top_k_sparse} | RRF k: {rrf_k} | Final Top-K: {top_k_final}")
     
     # Show active document filter if any
     if doc_filter:
         st.info(f" Filtering search to documents: {', '.join(doc_filter)}")
 
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "Chat Interface",
         "Retrieval metrics",
         "Data Evaluation Metrics",
-        "Conversational Logs",
         "System Metrics",
         "Buffer Tab",
         "Items Tab",
@@ -287,11 +289,9 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
                 "role": "user",
                 "content": cleaned_input
             })
-            
+
             query_times = {}
             total_start = time.perf_counter()
-            
-            # Get past conversation summary for context
             past_turns_summary = st.session_state["summary"]
 
             def answer_with_llm(top_texts, query, model_type, past_summary, chunk_ids=None):
@@ -302,8 +302,7 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
                     past_summary,
                     chunk_ids=chunk_ids
                 )
-            
-            # routing with document filtering
+
             model_type = "openai" if llm_model == "OpenAI" else "groq"
             route_result = route_and_answer(
                 cleaned_input,
@@ -319,37 +318,63 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
                 doc_filter=doc_filter
             )
 
-            # Extract the results
+            # --- Extract full LLM cost info
             answer = route_result["answer"]
             intent_info = route_result["intent"]
             retrieval_results = route_result["retrieval_results"]
             retrieval_strength_val = route_result["retrieval_strength"]
             used_rag = route_result["used_rag"]
             answer_decision = route_result.get("answer_decision", "")
-            top_scores_router= route_result.get("top_scores", [])
+            top_scores_router = route_result.get("top_scores", [])
             st.session_state["top_scores_router"] = top_scores_router
-            # Get timings
+
+            # Add router/main LLM token/cost info to query_times
+            for k in [
+                "router_input_tokens", "router_output_tokens", "router_total_tokens", "router_cost",
+                "main_input_tokens", "main_output_tokens", "main_total_tokens", "main_llm_cost"
+            ]:
+                query_times[k] = route_result.get(k, 0)
+
+            # --- Summarizer
+            last_turn = f"User: {cleaned_input}\nAssistant: {answer}"
+            summary_result = summarizer(
+                last_turn=last_turn,
+                past_summary=st.session_state["summary"]
+            )
+            st.session_state["summary"] = summary_result["summary"]
+            query_times["summarizer_input_tokens"] = summary_result.get("input_tokens", 0)
+            query_times["summarizer_output_tokens"] = summary_result.get("output_tokens", 0)
+            query_times["summarizer_total_tokens"] = summary_result.get("total_tokens", 0)
+            query_times["summarizer_cost"] = summary_result.get("cost", 0.0)
+
+            # --- Compute total cost for this turn
+            query_times["total_turn_cost"] = (
+                query_times.get("router_cost", 0)
+                + query_times.get("main_llm_cost", 0)
+                + query_times.get("summarizer_cost", 0)
+            )
+
+            
             if "timing_info" in route_result:
                 query_times.update(route_result["timing_info"])
             if "retrieval_timings" in route_result:
                 query_times.update(route_result["retrieval_timings"])
             query_times["intent_routing_time"] = query_times.get("rule_routing_time", 0) + query_times.get("llm_routing_time", 0)
-
-            # Chunks
             if used_rag and retrieval_results is not None:
                 st.session_state["top_texts"] = list(retrieval_results["text"])
                 st.session_state["top_chunk_ids"] = [int(cid) for cid in retrieval_results["chunk_id"] if cid is not None]
             else:
                 st.session_state["top_texts"] = []
                 st.session_state["top_chunk_ids"] = []
-                # Set timing to 0 when no RAG is used
-                for k in ["retrieval_time", "embedding_time", "dense_search_time", "sparse_search_time", "fusion_time", "generation_time"]:
+                for k in [
+                    "retrieval_time", "embedding_time", "dense_search_time", "sparse_search_time", "fusion_time", "generation_time"
+                ]:
                     if k not in query_times:
                         query_times[k] = 0
 
             query_times["total_time"] = time.perf_counter() - total_start
 
-            # Add all required metrics
+            # --- System metrics
             query_times["query"] = cleaned_input
             query_times["response"] = answer
             query_times["intent_labels"] = intent_info.get("labels", [])
@@ -360,20 +385,22 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
             query_times["used_rag"] = used_rag
             query_times["answer_decision"] = answer_decision
 
+            if "session_total_cost" not in st.session_state:
+                st.session_state["session_total_cost"] = 0.0
+            st.session_state["session_total_cost"] += query_times["total_turn_cost"]
+
             st.session_state["latency_logs"].append(query_times)
+
+            # --- Display bot answer with cost in chat
+            turn_cost = query_times["total_turn_cost"]
+            answer_with_cost = f"{answer}\n\n---\n  :orange[**Turn Cost: ${turn_cost:.6f}**]"
+
             st.session_state["messages"].append({
                 "role": "assistant",
-                "content": answer
+                "content": answer_with_cost
             })
-            
-            # Update conversation summary
-            last_turn = f"User: {cleaned_input}\nAssistant: {answer}"
-            st.session_state["summary"] = summarizer(
-                last_turn=last_turn,
-                past_summary=st.session_state["summary"]
-            )
-        
-            # Log to session buffer
+
+            # --- Log buffer and items as before
             session_logger.log_to_buffer(
                 session_id=st.session_state["session_id"],
                 turn_id=turn,
@@ -381,7 +408,6 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
                 bot_response=answer
             )
 
-            # LOG TO ITEMS TABLE + summary
             session_logger.log_to_items(
                 session_id=st.session_state["session_id"],
                 turn_id=turn,
@@ -389,31 +415,23 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
                 bot_response=answer,
                 summary=st.session_state["summary"],
                 metrics=query_times,
-                retrieval_type=retrieval_mode
+                retrieval_type=retrieval_mode,
+                llm_model=llm_model,
+                top_k_dense=top_k_dense,
+                top_k_sparse=top_k_sparse,
+                top_k_combined=top_k_final,
             )
-
-            # Update session summary
-            session_logger.log_session_summary(st.session_state["session_id"])
+            session_logger.log_session_summary(st.session_state["session_id"],llm_model=llm_model,top_k_dense=top_k_dense,top_k_sparse=top_k_sparse,top_k_combined=top_k_final,retrieval_type=retrieval_mode)
             
             st.session_state["turn_id"] += 1
             st.rerun()
 
+
     with tab2:
         st.header("Latency Metrics")
-        # thresholds -- default values
 
         st.markdown("--------------------------------------------------------------")
-        data = {
-            "TAU_RETRIEVE_STRONG": [0.030],
-            "TAU_RETRIEVE_WEAK": [0.015],
-            "TAU_ROUTER_HIGH": [0.80]
-        }
-
-        thresholds_df = pd.DataFrame(data)
-
-        st.subheader("Default Thresholds")
-        st.table(thresholds_df)
-        st.markdown("--------------------------------------------------------------")
+    
         mode = st.session_state["retrieval_mode"]
         
         # Add intent routing metrics to the columns
@@ -442,18 +460,13 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
             retrieval_strength = latest.get("retrieval_strength", 0)
             used_rag = latest.get("used_rag", False)
 
-            # Get top scores and format them
-            top_scores = st.session_state.get("top_scores_router", [])
-            formatted_scores = [f"{x:.3f}" for x in top_scores]  
-            avg_score = sum(top_scores) / len(top_scores) if top_scores else 0
+            
 
             # Display all info
             st.write(f"**Intent Labels:** {', '.join(intent_labels)}")
             st.write(f"**Intent Confidence:** {intent_confidence:.2f}")
-            st.write(f"**Retrieval Strength:** {retrieval_strength:.2f}")
             st.write(f"**RAG Used:** {'Yes' if used_rag else 'No'}")
-            st.write(f"**Top Scores (Retrieval Confidence):** {formatted_scores}")
-            st.write(f"**Average Retrieval Strength:** {avg_score:.4f}")
+            
 
             
 
@@ -477,7 +490,7 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
         st.header("Data Evaluation Metrics")
 
 
-        db = lancedb.connect("rag_chatbot/data/lancedb")
+        db = lancedb.connect(LANCEDB_PATH)
         table = db.open_table(table_name)
         df = table.to_pandas()
         
@@ -651,43 +664,10 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
             else:
                 st.button("Download Retrieved Chunks", disabled=True, help="No chunks retrieved yet")
 
-    with tab4:
-        st.header(" Conversation Logs ")
-        st.write(":blue[Latest conversations will be logged here.]")
-        buf_df = session_logger.get_buffer(st.session_state["session_id"])
-        if not buf_df.empty and "turn_id" in buf_df.columns:
-            buf_df = buf_df.sort_values("turn_id")
-        
-        logs = []
-        for _, row in buf_df.iterrows():
-            if row["user_query"]:
-                logs.append({
-                    "Turn ID": row["turn_id"],
-                    "Role": "User",
-                    "Content": row["user_query"],
-                    "Timestamp": row["timestamp"]
-                })
-            if row["bot_response"]:
-                logs.append({
-                    "Turn ID": row["turn_id"],
-                    "Role": "Assistant",
-                    "Content": row["bot_response"],
-                    "Timestamp": row["timestamp"]
-                })
-        if logs:
-            df_logs = pd.DataFrame(logs)
-            st.dataframe(df_logs.tail(10), use_container_width=True)
-            csv = df_logs.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="Download Conversation Logs as CSV",
-                data=csv,
-                file_name="conversation_logs.csv",
-                mime="text/csv"
-            )
-        else:
-            st.info("No conversation logs yet. Start chatting to generate logs.")
+    os.makedirs("json_datas", exist_ok=True)
 
-    with tab5:
+    
+    with tab4:
         st.header(" System Metrics")
 
         total_queries = len(st.session_state["latency_logs"])
@@ -760,7 +740,7 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
         df_metrics["Value"] = pd.to_numeric(df_metrics["Value"], errors="coerce")
         st.dataframe(df_metrics.style.format({"Value": "{:.2f}"}), use_container_width=True)
 
-    with tab6:
+    with tab5:
         st.header("Buffer Table")
         st.success("**Buffer Table**: Contains the latest user queries and bot responses for the current session.")
         buf_df = session_logger.get_buffer(st.session_state["session_id"])
@@ -775,7 +755,7 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
         else:
             st.info("Buffer is empty for this session.")
 
-    with tab7:
+    with tab6:
         st.header("Items Table")
         st.success("**Items Table**: Contains detailed logs of each chat interaction.")
         items_df = session_logger.get_items(st.session_state["session_id"])
@@ -788,10 +768,13 @@ if st.session_state["proceeded"] and st.session_state["db_initialized"]:
                 file_name=f"items_{st.session_state['session_id']}.csv",
                 mime="text/csv"
             )
+
+        
+        
         else:
             st.info("No items logged yet for this session.")
 
-    with tab8:
+    with tab7:
         st.header("Session Summaries")
         st.success("**Session Summaries**: Contains overall session metrics and summaries.")
         sessions_df = session_logger.get_all_sessions()

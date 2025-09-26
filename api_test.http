@@ -45,8 +45,14 @@ POST http://127.0.0.1:8000/chat
 Content-Type: application/json
 
 {
-  "session_id": "11644a7c-6a6d-48c4-b765-e29ef3cc217f",
+  "session_id": "3a60bf4a-6aaa-4a0a-94c5-ff5caf01b7ac",
   "query": "how can i get student loan"
 }
 
 ###
+POST http://127.0.0.1:8000/chat
+Content-Type: application/json
+
+{
+  "force_reindex": false
+}
