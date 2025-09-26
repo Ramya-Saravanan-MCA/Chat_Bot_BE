@@ -665,32 +665,27 @@ def get_session_history(session_id: str):
         raise HTTPException(status_code=404, detail="Session not found.")
 
     try:
-        # Fetch buffer (latest query/answer) and items (all queries/answers)
+        # Get buffer and items safely
         buffer_df = session_logger.get_buffer(session_id)
         items_df = session_logger.get_items(session_id)
 
-        # Latest turn
+        # Latest buffer turn (if exists)
         latest_turn = buffer_df.iloc[-1].to_dict() if not buffer_df.empty else None
 
-        # All item records
+        # All items (queries + answers)
         items_records = items_df.to_dict("records") if not items_df.empty else []
 
-        # Metrics aggregation
-        metrics_list = []
-        if "metrics" in items_df.columns:
-            for m in items_df["metrics"]:
-                if isinstance(m, dict):
-                    metrics_list.append(m)
+        # Metrics
+        metrics_list = [m for m in items_df["metrics"] if isinstance(m, dict)] if "metrics" in items_df.columns else []
 
-        total_items = len(items_df)
-        total_rag_queries = sum(1 for m in metrics_list if m.get("used_rag", False))
-        avg_response_time = np.mean([m.get("total_time", 0) for m in metrics_list]) if metrics_list else 0
+        total_items = len(items_records)
+        total_rag_queries = sum(1 for m in metrics_list if m.get("used_rag", False)) if metrics_list else 0
+        avg_response_time = float(np.mean([m.get("total_time", 0) for m in metrics_list])) if metrics_list else 0
 
         # Intent distribution
         intents = []
         for m in metrics_list:
-            if "intent_labels" in m:
-                intents.extend(m["intent_labels"])
+            intents.extend(m.get("intent_labels", [])) if "intent_labels" in m else None
         intent_distribution = pd.Series(intents).value_counts().to_dict() if intents else {}
 
         return {
@@ -706,7 +701,7 @@ def get_session_history(session_id: str):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving session history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving session history: {repr(e)}")
 
 @app.get("/sessions/{session_id}/goal-set")
 def export_session_goal_set(session_id: str):
