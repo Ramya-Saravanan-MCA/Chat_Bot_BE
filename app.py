@@ -9,10 +9,7 @@ import psutil
 from dotenv import load_dotenv
 load_dotenv()
 
-
 from config import GROQ_API_KEY, OPENAI_API_KEY, EMBEDDING_MODEL_NAME, LANCEDB_PATH
-
-
 
 from db.ingestor import Ingestor
 from retrieval.retriever import Retriever
@@ -56,6 +53,7 @@ def get_unified_knowledge_base_docs(db_path):
     except Exception as e:
         print(f"Error getting KB docs: {e}")
         return []
+
 
 OPENAI_API_KEY = OPENAI_API_KEY
 GROQ_API_KEY =GROQ_API_KEY
