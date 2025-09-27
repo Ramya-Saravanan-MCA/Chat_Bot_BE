@@ -662,22 +662,35 @@ def get_session_info(session_id: str):
 @app.get("/sessions/history/{session_id}")
 def get_session_history(session_id: str):
     try:
-        # Attempt to fetch items and buffer
         try:
             items_df = session_logger.get_items(session_id)
         except Exception:
             items_df = pd.DataFrame(columns=["turn_id", "user_query", "bot_response", 
                                              "summary", "metrics", "retrieval_type", 
-                                             "retrieved_chunk_ids"])
+                                             "retrieved_chunk_ids", "intent_labels",
+                                             "intent_confidence", "slots",
+                                             "retrieval_strength", "embedding_latency_ms",
+                                             "dense_retrieval_latency_ms", "sparse_retrieval_latency_ms",
+                                             "llm_latency_ms", "total_latency_ms", "timestamp"])
 
         try:
             buffer_df = session_logger.get_buffer(session_id)
         except Exception:
             buffer_df = pd.DataFrame(columns=["turn_id", "user_query", "bot_response"])
 
+        # Ensure missing columns exist
+        expected_cols = ["turn_id","user_query","bot_response","summary","intent_labels",
+                         "intent_confidence","slots","retrieval_type","retrieval_strength",
+                         "embedding_latency_ms","dense_retrieval_latency_ms",
+                         "sparse_retrieval_latency_ms","llm_latency_ms",
+                         "total_latency_ms","timestamp"]
+        for col in expected_cols:
+            if col not in items_df.columns:
+                items_df[col] = None
+
         return {
             "session_id": session_id,
-            "items": items_df.to_dict("records"),
+            "items": items_df[expected_cols].to_dict("records"),
             "buffer": buffer_df.to_dict("records"),
             "total_items": len(items_df)
         }
