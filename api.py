@@ -662,17 +662,18 @@ def get_session_info(session_id: str):
 @app.get("/sessions/history/{session_id}")
 def get_session_history(session_id: str):
     try:
+        if "session_logger" not in globals():
+            raise HTTPException(status_code=500, detail="session_logger not initialized")
+
         try:
             items_df = session_logger.get_items(session_id)
         except Exception:
-            items_df = pd.DataFrame(columns=["turn_id", "user_query", "bot_response", 
-                                             "summary", "metrics", "retrieval_type", 
-                                             "retrieved_chunk_ids"])
+            items_df = pd.DataFrame()
 
         try:
             buffer_df = session_logger.get_buffer(session_id)
         except Exception:
-            buffer_df = pd.DataFrame(columns=["turn_id", "user_query", "bot_response"])
+            buffer_df = pd.DataFrame()
 
         # Flatten metrics if available
         if "metrics" in items_df.columns:
@@ -680,7 +681,6 @@ def get_session_history(session_id: str):
             metrics_df = pd.json_normalize(metrics_expanded)
             items_df = pd.concat([items_df.drop(columns=["metrics"]), metrics_df], axis=1)
 
-        # Ensure all expected columns exist
         expected_cols = [
             "turn_id","user_query","bot_response","summary","intent_labels",
             "intent_confidence","slots","retrieval_type","retrieval_strength",
@@ -688,6 +688,7 @@ def get_session_history(session_id: str):
             "sparse_retrieval_latency_ms","llm_latency_ms",
             "total_latency_ms","timestamp"
         ]
+
         for col in expected_cols:
             if col not in items_df.columns:
                 items_df[col] = None
