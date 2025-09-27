@@ -667,23 +667,27 @@ def get_session_history(session_id: str):
         except Exception:
             items_df = pd.DataFrame(columns=["turn_id", "user_query", "bot_response", 
                                              "summary", "metrics", "retrieval_type", 
-                                             "retrieved_chunk_ids", "intent_labels",
-                                             "intent_confidence", "slots",
-                                             "retrieval_strength", "embedding_latency_ms",
-                                             "dense_retrieval_latency_ms", "sparse_retrieval_latency_ms",
-                                             "llm_latency_ms", "total_latency_ms", "timestamp"])
+                                             "retrieved_chunk_ids"])
 
         try:
             buffer_df = session_logger.get_buffer(session_id)
         except Exception:
             buffer_df = pd.DataFrame(columns=["turn_id", "user_query", "bot_response"])
 
-        # Ensure missing columns exist
-        expected_cols = ["turn_id","user_query","bot_response","summary","intent_labels",
-                         "intent_confidence","slots","retrieval_type","retrieval_strength",
-                         "embedding_latency_ms","dense_retrieval_latency_ms",
-                         "sparse_retrieval_latency_ms","llm_latency_ms",
-                         "total_latency_ms","timestamp"]
+        # Flatten metrics if available
+        if "metrics" in items_df.columns:
+            metrics_expanded = items_df["metrics"].apply(lambda m: m if isinstance(m, dict) else {})
+            metrics_df = pd.json_normalize(metrics_expanded)
+            items_df = pd.concat([items_df.drop(columns=["metrics"]), metrics_df], axis=1)
+
+        # Ensure all expected columns exist
+        expected_cols = [
+            "turn_id","user_query","bot_response","summary","intent_labels",
+            "intent_confidence","slots","retrieval_type","retrieval_strength",
+            "embedding_latency_ms","dense_retrieval_latency_ms",
+            "sparse_retrieval_latency_ms","llm_latency_ms",
+            "total_latency_ms","timestamp"
+        ]
         for col in expected_cols:
             if col not in items_df.columns:
                 items_df[col] = None
